@@ -17,6 +17,11 @@ const envSchema = z.object({
     .optional()
     .default('false')
     .transform((value) => value.toLowerCase() === 'true'),
+  AUTO_START_WHEN_OCCUPIED: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((value) => value.toLowerCase() === 'true'),
   SCHEDULE_START: z.string().regex(hhmmRegex).default('22:00'),
   SCHEDULE_STOP: z.string().regex(hhmmRegex).default('07:00')
 });

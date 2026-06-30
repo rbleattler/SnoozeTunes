@@ -46,7 +46,7 @@ export class SleepService {
   private isStopping = false;
   private creditsCatalog: CreditsCatalog = { tracks: [] };
   private currentTrackName: string | null = null;
-  private recentlyPlayedTrackNames: string[] = [];
+  private recentlyPlayedTrackPaths: string[] = [];
   private emptyChannelTimer: NodeJS.Timeout | null = null;
 
   public constructor(
@@ -140,14 +140,14 @@ export class SleepService {
     }
 
     const tracks = await loadPresetTracks(this.config.MUSIC_LIBRARY_PATH, this.currentPreset);
-    const selected = chooseRandomTrack(tracks, this.recentlyPlayedTrackNames);
+    const selected = chooseRandomTrack(tracks, this.recentlyPlayedTrackPaths);
 
     if (!selected) {
       throw new Error(`No playable files found in preset "${this.currentPreset}".`);
     }
 
     this.currentTrackName = selected.name;
-    this.recentlyPlayedTrackNames = [selected.path, ...this.recentlyPlayedTrackNames].slice(0, 10);
+    this.recentlyPlayedTrackPaths = [selected.path, ...this.recentlyPlayedTrackPaths].slice(0, 10);
 
     const ffmpeg = spawn('ffmpeg', ['-v', 'error', '-i', selected.path, '-f', 's16le', '-ar', '48000', '-ac', '2', 'pipe:1']);
 
@@ -185,6 +185,10 @@ export class SleepService {
 
   public getPresets = async (): Promise<string[]> => listPresets(this.config.MUSIC_LIBRARY_PATH);
 
+  public isConnected(): boolean {
+    return this.connection !== null;
+  }
+
   public getStatus(): PlaybackState {
     return {
       playing: this.player.state.status === AudioPlayerStatus.Playing,
@@ -192,7 +196,7 @@ export class SleepService {
       channelId: this.connection?.joinConfig.channelId ?? null,
       preset: this.currentPreset,
       currentTrack: this.currentTrackName,
-      recentTracks: [...this.recentlyPlayedTrackNames].map((trackPath) => path.basename(trackPath))
+      recentTracks: [...this.recentlyPlayedTrackPaths].map((trackPath) => path.basename(trackPath))
     };
   }
 
@@ -206,7 +210,7 @@ export class SleepService {
       return current;
     }
 
-    return this.recentlyPlayedTrackNames
+    return this.recentlyPlayedTrackPaths
       .map((trackPath) => findCreditsByTrackName(this.creditsCatalog, path.basename(trackPath)))
       .flat();
   }

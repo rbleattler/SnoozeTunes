@@ -10,7 +10,7 @@ It joins a configured voice channel and plays **local** music files (ambient, ra
 - Plays local files from mounted folders (`/music/<preset>`)
 - Supports slash commands for start/stop/status/presets/schedule/credits
 - Loops continuously with randomized track selection and anti-repeat behavior
-- Supports optional daily schedule and optional role restriction
+- Supports optional daily schedule, role restriction, and optional auto-start when people are in channel
 - Shows attribution from a local track catalog
 
 ### Does not
@@ -56,6 +56,7 @@ TIMEZONE=America/New_York
 EMPTY_CHANNEL_TIMEOUT_MINUTES=10
 DEFAULT_PRESET=ambient
 SCHEDULE_ENABLED=false
+AUTO_START_WHEN_OCCUPIED=false
 SCHEDULE_START=22:00
 SCHEDULE_STOP=07:00
 ```

@@ -1,13 +1,17 @@
 import 'dotenv/config';
 
 import { REST, Routes } from 'discord.js';
-import { Client, Events, GatewayIntentBits } from 'discord.js';
+import { ChannelType, Client, Events, GatewayIntentBits, type GuildBasedChannel, type VoiceBasedChannel } from 'discord.js';
 
 import { sleepCommand, handleSleepCommand } from './commands/sleepCommand.js';
 import { loadConfig } from './config/env.js';
 import { SchedulerService, type ScheduleState } from './services/schedulerService.js';
 import { SleepService } from './services/sleepService.js';
 import { logger } from './utils/logger.js';
+
+const isVoiceChannel = (channel: GuildBasedChannel): channel is VoiceBasedChannel => {
+  return channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice;
+};
 
 const main = async (): Promise<void> => {
   const config = loadConfig();
@@ -24,6 +28,40 @@ const main = async (): Promise<void> => {
     start: config.SCHEDULE_START,
     stop: config.SCHEDULE_STOP,
     preset: config.DEFAULT_PRESET
+  };
+
+  let autoStartInFlight = false;
+
+  const maybeAutoStartFromOccupancy = async (guildId: string): Promise<void> => {
+    if (!config.AUTO_START_WHEN_OCCUPIED || !config.DISCORD_GUILD_ID || !config.VOICE_CHANNEL_ID) {
+      return;
+    }
+
+    if (guildId !== config.DISCORD_GUILD_ID || sleepService.isConnected() || autoStartInFlight) {
+      return;
+    }
+
+    const guild = client.guilds.cache.get(guildId) ?? (await client.guilds.fetch(guildId));
+    const channel = guild.channels.cache.get(config.VOICE_CHANNEL_ID);
+    if (!channel || !isVoiceChannel(channel)) {
+      return;
+    }
+
+    const hasHumans = channel.members.some((member) => !member.user.bot);
+    if (!hasHumans) {
+      return;
+    }
+
+    autoStartInFlight = true;
+
+    try {
+      await sleepService.start(guild, config.VOICE_CHANNEL_ID, config.DEFAULT_PRESET);
+      logger.info('Auto-start triggered by voice channel occupancy', { guildId, channelId: config.VOICE_CHANNEL_ID });
+    } catch (error) {
+      logger.warn('Auto-start on occupancy failed', { error: String(error) });
+    } finally {
+      autoStartInFlight = false;
+    }
   };
 
   const applySchedule = (): void => {
@@ -52,6 +90,7 @@ const main = async (): Promise<void> => {
       voiceChannel: config.VOICE_CHANNEL_ID || 'unset',
       defaultPreset: config.DEFAULT_PRESET,
       scheduleEnabled: config.SCHEDULE_ENABLED,
+      autoStartWhenOccupied: config.AUTO_START_WHEN_OCCUPIED,
       timezone: config.TIMEZONE
     });
 
@@ -66,6 +105,10 @@ const main = async (): Promise<void> => {
 
     await sleepService.initialize();
     applySchedule();
+
+    if (config.AUTO_START_WHEN_OCCUPIED && config.DISCORD_GUILD_ID) {
+      await maybeAutoStartFromOccupancy(config.DISCORD_GUILD_ID);
+    }
   });
 
   client.on(Events.InteractionCreate, async (interaction) => {
@@ -105,6 +148,7 @@ const main = async (): Promise<void> => {
     }
 
     sleepService.handleVoiceStateUpdate(nextState.guild.id, nextState.channelId);
+    void maybeAutoStartFromOccupancy(nextState.guild.id);
   });
 
   const gracefulShutdown = async (signal: string): Promise<void> => {
