@@ -1,0 +1,12 @@
+{
+  "tracks": [
+    {
+      "title": "soft-night-rain",
+      "artist": "Example Artist",
+      "sourceUrl": "https://example.com/soft-night-rain",
+      "license": "CC BY 4.0",
+      "attribution": "Soft Night Rain by Example Artist (CC BY 4.0)",
+      "preset": "rain"
+    }
+  ]
+}
