@@ -8,7 +8,7 @@ It joins a configured voice channel and plays **local** music files (ambient, ra
 
 ### Does
 - Plays local files from mounted folders (`/music/<preset>`)
-- Supports slash commands for start/stop/status/presets/schedule/credits
+- Supports slash commands for start/stop/status/presets/schedule/autostart/credits
 - Loops continuously with randomized track selection and anti-repeat behavior
 - Supports optional daily schedule, role restriction, and optional auto-start when people are in channel
 - Shows attribution from a local track catalog
@@ -68,6 +68,7 @@ SCHEDULE_STOP=07:00
 - `/sleep status`
 - `/sleep presets`
 - `/sleep schedule start:<HH:mm> stop:<HH:mm> [preset]`
+- `/sleep autostart enabled:<true|false>`
 - `/sleep credits`
 
 ## Music library structure

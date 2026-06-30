@@ -29,11 +29,14 @@ const main = async (): Promise<void> => {
     stop: config.SCHEDULE_STOP,
     preset: config.DEFAULT_PRESET
   };
+  let autoStartState = {
+    enabled: config.AUTO_START_WHEN_OCCUPIED
+  };
 
   let autoStartInFlight = false;
 
   const maybeAutoStartFromOccupancy = async (guildId: string): Promise<void> => {
-    if (!config.AUTO_START_WHEN_OCCUPIED || !config.DISCORD_GUILD_ID || !config.VOICE_CHANNEL_ID) {
+    if (!autoStartState.enabled || !config.DISCORD_GUILD_ID || !config.VOICE_CHANNEL_ID) {
       return;
     }
 
@@ -90,7 +93,7 @@ const main = async (): Promise<void> => {
       voiceChannel: config.VOICE_CHANNEL_ID || 'unset',
       defaultPreset: config.DEFAULT_PRESET,
       scheduleEnabled: config.SCHEDULE_ENABLED,
-      autoStartWhenOccupied: config.AUTO_START_WHEN_OCCUPIED,
+      autoStartWhenOccupied: autoStartState.enabled,
       timezone: config.TIMEZONE
     });
 
@@ -106,7 +109,7 @@ const main = async (): Promise<void> => {
     await sleepService.initialize();
     applySchedule();
 
-    if (config.AUTO_START_WHEN_OCCUPIED && config.DISCORD_GUILD_ID) {
+    if (autoStartState.enabled && config.DISCORD_GUILD_ID) {
       await maybeAutoStartFromOccupancy(config.DISCORD_GUILD_ID);
     }
   });
@@ -126,6 +129,19 @@ const main = async (): Promise<void> => {
             set: (schedule) => {
               scheduleState = schedule;
               applySchedule();
+            }
+          },
+          autoStart: {
+            get: () => autoStartState,
+            set: (state) => {
+              autoStartState = state;
+            },
+            trigger: async () => {
+              if (!config.DISCORD_GUILD_ID) {
+                return;
+              }
+
+              await maybeAutoStartFromOccupancy(config.DISCORD_GUILD_ID);
             }
           }
         },

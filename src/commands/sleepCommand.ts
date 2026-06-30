@@ -25,6 +25,12 @@ export const sleepCommand: RESTPostAPIApplicationCommandsJSONBody = new SlashCom
       .addStringOption((option) => option.setName('stop').setDescription('Stop time HH:mm').setRequired(true))
       .addStringOption((option) => option.setName('preset').setDescription('Preset to use when schedule starts').setRequired(false))
   )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('autostart')
+      .setDescription('Enable or disable auto-start when the voice channel is occupied')
+      .addBooleanOption((option) => option.setName('enabled').setDescription('Whether auto-start should be enabled').setRequired(true))
+  )
   .addSubcommand((subcommand) => subcommand.setName('credits').setDescription('Show attribution info for active/recent tracks'))
   .toJSON();
 
@@ -52,6 +58,11 @@ export const handleSleepCommand = async (
     scheduler: {
       get: () => ScheduleState;
       set: (schedule: ScheduleState) => void;
+    };
+    autoStart: {
+      get: () => { enabled: boolean };
+      set: (state: { enabled: boolean }) => void;
+      trigger: () => Promise<void>;
     };
   },
   config: AppConfig
@@ -90,12 +101,14 @@ export const handleSleepCommand = async (
   if (subcommand === 'status') {
     const status = services.sleepService.getStatus();
     const schedule = services.scheduler.get();
+    const autoStart = services.autoStart.get();
     await interaction.reply(
       `**Playback:** ${status.playing ? 'Playing' : 'Stopped'}\n` +
         `**Preset:** ${status.preset}\n` +
         `**Track:** ${status.currentTrack ?? 'N/A'}\n` +
         `**Channel:** ${status.channelId ? `<#${status.channelId}>` : 'N/A'}\n` +
-        `**Schedule:** ${schedule.enabled ? `${schedule.start} → ${schedule.stop}` : 'Disabled'}`
+        `**Schedule:** ${schedule.enabled ? `${schedule.start} → ${schedule.stop}` : 'Disabled'}\n` +
+        `**Auto-start:** ${autoStart.enabled ? 'Enabled' : 'Disabled'}`
     );
     return;
   }
@@ -128,5 +141,24 @@ export const handleSleepCommand = async (
 
     services.scheduler.set({ enabled: true, start, stop, preset });
     await interaction.reply(`Schedule updated: start **${start}**, stop **${stop}**, preset **${preset}**.`);
+    return;
+  }
+
+  if (subcommand === 'autostart') {
+    const enabled = interaction.options.getBoolean('enabled', true);
+    if (enabled && (!config.DISCORD_GUILD_ID || !config.VOICE_CHANNEL_ID)) {
+      await interaction.reply({
+        content: 'DISCORD_GUILD_ID and VOICE_CHANNEL_ID must be configured before enabling auto-start.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    services.autoStart.set({ enabled });
+    if (enabled) {
+      await services.autoStart.trigger();
+    }
+
+    await interaction.reply(`Auto-start is now **${enabled ? 'enabled' : 'disabled'}**.`);
   }
 };
