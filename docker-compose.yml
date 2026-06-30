@@ -1,0 +1,10 @@
+services:
+  snoozetunes:
+    build: .
+    container_name: snoozetunes
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /srv/snoozetunes/music:/music:ro
+      - /srv/snoozetunes/data:/data:rw
