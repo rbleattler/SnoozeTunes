@@ -44,20 +44,20 @@ const main = async (): Promise<void> => {
       return;
     }
 
-    const guild = client.guilds.cache.get(guildId) ?? (await client.guilds.fetch(guildId));
-    const channel = guild.channels.cache.get(config.VOICE_CHANNEL_ID);
-    if (!channel || !isVoiceChannel(channel)) {
-      return;
-    }
-
-    const hasHumans = channel.members.some((member) => !member.user.bot);
-    if (!hasHumans) {
-      return;
-    }
-
     autoStartInFlight = true;
 
     try {
+      const guild = client.guilds.cache.get(guildId) ?? (await client.guilds.fetch(guildId));
+      const channel = guild.channels.cache.get(config.VOICE_CHANNEL_ID);
+      if (!channel || !isVoiceChannel(channel)) {
+        return;
+      }
+
+      const hasHumans = channel.members.some((member) => !member.user.bot);
+      if (!hasHumans) {
+        return;
+      }
+
       await sleepService.start(guild, config.VOICE_CHANNEL_ID, config.DEFAULT_PRESET);
       logger.info('Auto-start triggered by voice channel occupancy', { guildId, channelId: config.VOICE_CHANNEL_ID });
     } catch (error) {
