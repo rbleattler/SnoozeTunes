@@ -53,7 +53,15 @@ const main = async (): Promise<void> => {
         return;
       }
 
-      const hasHumans = channel.members.some((member) => !member.user.bot);
+      const selfUserId = client.user?.id;
+      if (!selfUserId) {
+        return;
+      }
+
+      const hasHumans = guild.voiceStates.cache.some(
+        (state) => state.channelId === config.VOICE_CHANNEL_ID && state.id !== selfUserId && state.member?.user.bot !== true
+      );
+
       if (!hasHumans) {
         return;
       }
@@ -159,12 +167,14 @@ const main = async (): Promise<void> => {
   });
 
   client.on(Events.VoiceStateUpdate, (_, nextState) => {
-    if (!nextState.guild.id || !nextState.channelId) {
+    if (!nextState.guild.id) {
       return;
     }
 
-    sleepService.handleVoiceStateUpdate(nextState.guild.id, nextState.channelId);
-    void maybeAutoStartFromOccupancy(nextState.guild.id);
+    sleepService.handleVoiceStateUpdate(nextState.guild.id);
+    if (nextState.channelId) {
+      void maybeAutoStartFromOccupancy(nextState.guild.id);
+    }
   });
 
   const gracefulShutdown = async (signal: string): Promise<void> => {

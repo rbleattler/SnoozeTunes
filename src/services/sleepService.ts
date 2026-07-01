@@ -215,8 +215,8 @@ export class SleepService {
       .flat();
   }
 
-  public handleVoiceStateUpdate(guildId: string, channelId: string): void {
-    if (!this.connection || this.connection.joinConfig.guildId !== guildId || this.connection.joinConfig.channelId !== channelId) {
+  public handleVoiceStateUpdate(guildId: string): void {
+    if (!this.connection || this.connection.joinConfig.guildId !== guildId) {
       return;
     }
 
@@ -228,16 +228,18 @@ export class SleepService {
       return;
     }
 
-    const guild = this.client.guilds.cache.get(this.connection.joinConfig.guildId);
     const connectionChannelId = this.connection.joinConfig.channelId;
-    const channel = connectionChannelId ? guild?.channels.cache.get(connectionChannelId) : undefined;
-
-    if (!channel || !this.isVoiceChannel(channel)) {
+    const guild = this.client.guilds.cache.get(this.connection.joinConfig.guildId);
+    const selfUserId = this.client.user?.id;
+    if (!guild || !connectionChannelId || !selfUserId) {
       return;
     }
 
-    const nonBotMemberCount = channel.members.filter((member) => !member.user.bot).size;
-    if (nonBotMemberCount > 0) {
+    const hasHumans = guild.voiceStates.cache.some(
+      (state) => state.channelId === connectionChannelId && state.id !== selfUserId && state.member?.user.bot !== true
+    );
+
+    if (hasHumans) {
       this.cancelEmptyChannelTimer();
       return;
     }
@@ -246,6 +248,9 @@ export class SleepService {
       return;
     }
 
+    logger.info('Voice channel is empty. Starting disconnect timer.', {
+      timeoutMinutes: this.config.EMPTY_CHANNEL_TIMEOUT_MINUTES
+    });
     this.emptyChannelTimer = setTimeout(() => {
       logger.info('Voice channel stayed empty. Stopping playback.', {
         timeoutMinutes: this.config.EMPTY_CHANNEL_TIMEOUT_MINUTES

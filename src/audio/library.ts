@@ -33,8 +33,14 @@ export const chooseRandomTrack = (tracks: Track[], recentPaths: string[]): Track
     return null;
   }
 
-  const filtered = tracks.filter((track) => !recentPaths.includes(track.path));
-  const candidatePool = filtered.length > 0 ? filtered : tracks;
+  if (tracks.length === 1) {
+    return tracks[0] ?? null;
+  }
+
+  const mostRecentPath = recentPaths[0];
+  const nonImmediateRepeats = tracks.filter((track) => track.path !== mostRecentPath);
+  const filtered = nonImmediateRepeats.filter((track) => !recentPaths.includes(track.path));
+  const candidatePool = filtered.length > 0 ? filtered : nonImmediateRepeats;
   const index = Math.floor(Math.random() * candidatePool.length);
   return candidatePool[index] ?? null;
 };

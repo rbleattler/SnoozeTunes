@@ -16,10 +16,18 @@ describe('chooseRandomTrack', () => {
     expect(track?.path).toBe('/music/ambient/b.mp3');
   });
 
-  it('falls back to full list when all tracks are recent', () => {
+  it('does not immediately repeat the most recent track when alternatives exist', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
 
     const track = chooseRandomTrack(tracks, ['/music/ambient/a.mp3', '/music/ambient/b.mp3']);
+
+    expect(track?.path).toBe('/music/ambient/b.mp3');
+  });
+
+  it('repeats only when there is no alternative track', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const track = chooseRandomTrack([tracks[0]], ['/music/ambient/a.mp3']);
 
     expect(track?.path).toBe('/music/ambient/a.mp3');
   });
