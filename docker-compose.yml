@@ -3,8 +3,22 @@ services:
     build: .
     container_name: snoozetunes
     restart: unless-stopped
-    env_file:
-      - .env
+
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      VOICE_CHANNEL_ID: ${VOICE_CHANNEL_ID}
+      ALLOWED_ROLE_ID: ${ALLOWED_ROLE_ID}
+      MUSIC_LIBRARY_PATH: /music
+      TIMEZONE: ${TIMEZONE}
+      EMPTY_CHANNEL_TIMEOUT_MINUTES: ${EMPTY_CHANNEL_TIMEOUT_MINUTES}
+      DEFAULT_PRESET: ${DEFAULT_PRESET}
+      SCHEDULE_ENABLED: ${SCHEDULE_ENABLED}
+      AUTO_START_WHEN_OCCUPIED: ${AUTO_START_WHEN_OCCUPIED}
+      SCHEDULE_START: ${SCHEDULE_START}
+      SCHEDULE_STOP: ${SCHEDULE_STOP}
+
     volumes:
-      - /srv/snoozetunes/music:/music:ro
-      - /srv/snoozetunes/data:/data:rw
+      - /mnt/YOUR_POOL/YOUR_MEDIA_PATH/SnoozeTunes:/music:ro
+      - /mnt/YOUR_POOL/apps/snoozetunes/data:/data:rw
