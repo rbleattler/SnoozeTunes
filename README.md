@@ -189,3 +189,10 @@ Inside the container, SnoozeTunes still sees the library at `/music` regardless 
 - Keep your Discord token private; never commit `.env`.
 - Mount `/music` as read-only.
 - Use least-privilege Discord permissions.
+
+## Legal documents
+
+- Privacy Policy: [docs/privacy-policy.md](./docs/privacy-policy.md)
+- Terms of Service: [docs/terms-of-service.md](./docs/terms-of-service.md)
+
+These documents are generic starting points for SnoozeTunes. Replace the placeholder contact details and review them for your specific deployment before publishing them in the Discord Developer Portal or elsewhere.
