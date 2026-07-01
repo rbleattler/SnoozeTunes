@@ -51,6 +51,8 @@ DISCORD_CLIENT_ID=
 DISCORD_GUILD_ID=
 VOICE_CHANNEL_ID=
 ALLOWED_ROLE_ID=
+MUSIC_HOST_PATH=/srv/snoozetunes/music
+DATA_HOST_PATH=/srv/snoozetunes/data
 MUSIC_LIBRARY_PATH=/music
 TIMEZONE=America/New_York
 EMPTY_CHANNEL_TIMEOUT_MINUTES=10
@@ -60,6 +62,11 @@ AUTO_START_WHEN_OCCUPIED=false
 SCHEDULE_START=22:00
 SCHEDULE_STOP=07:00
 ```
+
+Notes:
+- `MUSIC_HOST_PATH` is the host/NAS folder Docker should mount read-only into the container.
+- `DATA_HOST_PATH` is the host/NAS folder Docker should mount read-write for bot state.
+- `MUSIC_LIBRARY_PATH` is the path **inside** the container and should stay `/music` for Docker deployments.
 
 ## Slash commands
 
@@ -75,16 +82,18 @@ SCHEDULE_STOP=07:00
 
 ```text
 /music/
+  tracks.json
   ambient/
     file1.mp3
   rain/
     file2.wav
   lofi/
   white-noise/
-  tracks.json
 ```
 
 `tracks.json` format is documented in `music/tracks.example.json`.
+
+`tracks.json` is loaded from the root of `MUSIC_LIBRARY_PATH`, so in Docker it should live directly in the mounted music folder on your host or NAS. If `tracks.json` is missing, playback still works, but `/sleep credits` will not have attribution data to show.
 
 ## License and attribution expectations
 
@@ -104,9 +113,16 @@ npm run build
 npm run dev
 ```
 
+If you run the bot directly on your machine instead of in Docker, set `MUSIC_LIBRARY_PATH` in `.env` to a local folder such as `./music`.
+
 ## Docker deployment
 
-Build and run:
+1. Copy `.env.example` to `.env`.
+2. Fill in your Discord settings plus `MUSIC_HOST_PATH` and `DATA_HOST_PATH`.
+3. Create the host folders if they do not already exist.
+4. Ensure your music folder contains preset directories such as `ambient/`, `rain/`, `lofi/`, and `white-noise/`.
+5. Place `tracks.json` in the root of that music folder if you want `/sleep credits` attribution.
+6. Build and run:
 
 ```bash
 docker compose up -d --build
@@ -119,16 +135,27 @@ Compose includes:
 - No exposed ports
 
 Example mappings (adapt paths for TrueNAS/Unraid/Linux):
-- `/srv/snoozetunes/music:/music:ro`
-- `/srv/snoozetunes/data:/data:rw`
+- `MUSIC_HOST_PATH=/srv/snoozetunes/music`
+- `DATA_HOST_PATH=/srv/snoozetunes/data`
 
-## Portainer deployment
+## Portainer repository stack deployment
 
-1. Create a Stack.
-2. Paste `docker-compose.yml`.
-3. Upload `.env` as stack env vars or use bind-mounted env file.
-4. Update volume host paths for your NAS/server.
-5. Deploy stack.
+1. Create a Stack from this repository.
+2. Use `docker-compose.yml` from the repo.
+3. Do **not** commit or upload a real `.env` file.
+4. Enter the values from `.env.example` in Portainer's **Environment variables** section.
+5. Set `MUSIC_HOST_PATH` and `DATA_HOST_PATH` to folders visible to the Docker host.
+6. On TrueNAS SCALE, those paths are typically under `/mnt/<pool-name>/...`.
+7. Deploy the stack.
+
+Example host-path values for TrueNAS SCALE:
+
+```env
+MUSIC_HOST_PATH=/mnt/<pool-name>/media/music/SnoozeTunes/music
+DATA_HOST_PATH=/mnt/<pool-name>/apps/snoozetunes/data
+```
+
+Inside the container, SnoozeTunes still sees the library at `/music` regardless of the host path you choose.
 
 ## Troubleshooting
 
@@ -147,6 +174,11 @@ Example mappings (adapt paths for TrueNAS/Unraid/Linux):
 ### Docker volume permission issues
 - Ensure container user can read `/music` and write `/data`.
 - Verify file ownership and mount paths.
+
+### Portainer stack sees the wrong path
+- Portainer environment variables only affect values referenced in `docker-compose.yml`.
+- `MUSIC_HOST_PATH` must be the real host path on the Docker/TrueNAS system.
+- `MUSIC_LIBRARY_PATH` should remain `/music`; it is the path *inside* the SnoozeTunes container.
 
 ### Voice channel disconnects
 - SnoozeTunes attempts reconnect when practical.

@@ -6,3 +6,4 @@ dist/
 npm-debug.log*
 data/*.json
 !data/.gitkeep
+handoff.md

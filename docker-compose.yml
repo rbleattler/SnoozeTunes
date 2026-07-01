@@ -20,5 +20,5 @@ services:
       SCHEDULE_STOP: ${SCHEDULE_STOP}
 
     volumes:
-      - /mnt/YOUR_POOL/YOUR_MEDIA_PATH/SnoozeTunes:/music:ro
-      - /mnt/YOUR_POOL/apps/snoozetunes/data:/data:rw
+      - ${MUSIC_HOST_PATH}:/music:ro
+      - ${DATA_HOST_PATH}:/data:rw
